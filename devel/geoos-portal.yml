@@ -1,0 +1,36 @@
+version: '3.6'
+services:
+    db:
+        image: mongo:4.4.1-bionic
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: geoos-admin
+            MONGO_INITDB_ROOT_PASSWORD: geoos-password
+        volumes:
+            - ./../../dev-data/mongo-data:/data/db
+
+    portal:
+        image: node:14-alpine
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9234:9234/tcp # nodemon debugger
+            - 8091:8090/tcp
+        working_dir: /usr/src/app
+        environment:
+            MONGO_URL: "mongodb://geoos-admin:geoos-password@db:27017"
+            MONGO_DATABASE: geoos
+        volumes:
+            - ./../../portal:/usr/src/app
+            - ./../../dev-data/config:/home/config
+        command: "npm run-script debug"
+
+    plugin:
+        image: node:14-alpine
+        ports:
+            - 9235:9235/tcp # nodemon debugger
+            - 8092:8090/tcp
+        working_dir: /usr/src/app
+        volumes:
+            - ./../../sample-plugin:/usr/src/app
+        command: "npm run-script debug"
