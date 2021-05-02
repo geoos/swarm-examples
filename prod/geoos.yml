@@ -1,0 +1,105 @@
+version: '3.6'
+services:
+    db:
+        image: mongo:4.4.1-bionic
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: geoos-admin
+            MONGO_INITDB_ROOT_PASSWORD: geoos-password
+        volumes:
+            - ./mongo-data:/data/db
+
+    portal:
+        image: docker.homejota.net/geoos/portal
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 8090:8090/tcp
+        environment:
+            MONGO_URL: "mongodb://geoos-admin:geoos-password@db:27017"
+            MONGO_DATABASE: geoos
+        volumes:
+            - ./config:/home/config
+
+    noaa-gfs4:
+        image: docker.homejota.net/geoos/noaa-gfs4
+        deploy:
+            restart_policy:
+                condition: on-failure
+        environment:
+            LOG_LEVEL: debug
+            DOWNLOADER_ACTIVE: "true"
+            N_PARALLEL_DOWNLOADS: 5
+        volumes:
+            - ./data:/home/data
+            - ./config:/home/config
+            - ./log:/home/log
+
+    noaa-ww3:
+        image: docker.homejota.net/geoos/noaa-ww3
+        deploy:
+            restart_policy:
+                condition: on-failure
+        environment:
+            LOG_LEVEL: debug
+            DOWNLOADER_ACTIVE: "true"
+            N_PARALLEL_DOWNLOADS: 5
+        volumes:
+            - ./data:/home/data
+            - ./config:/home/config
+            - ./log:/home/log
+
+    copernicus:
+        image: docker.homejota.net/geoos/copernicus
+        deploy:
+            restart_policy:
+                condition: on-failure
+        environment:
+            LOG_LEVEL: debug
+            DOWNLOADER_ACTIVE: "true"
+        volumes:
+            - ./data:/home/data
+            - ./config:/home/config
+            - ./log:/home/log
+
+    geoserver:
+        image: docker.homejota.net/geoos/geoserver
+        deploy:
+            restart_policy:
+                condition: on-failure
+        #ports:
+        #    - 8180:8080/tcp
+        environment:
+            LOG_LEVEL: debug
+        volumes:
+            - ./data:/home/data
+            - ./config:/home/config
+            - ./log:/home/log
+            - ./www:/home/www
+
+    zrepo:
+        image: docker.homejota.net/geoos/zrepo
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 8096:8096/tcp
+        environment:
+            MONGO_URL: "mongodb://geoos-admin:geoos-password@db:27017"
+            MONGO_DATABASE: zrepo
+            LOG_LEVEL: debug
+        volumes:
+            - ./config:/home/config
+            - ./log:/home/log
+
+    rie:
+        image: docker.homejota.net/geoos/rie
+        deploy:
+            restart_policy:
+                condition: on-failure
+        environment:
+            LOG_LEVEL: debug
+        volumes:
+            - ./config:/home/config
+            - ./log:/home/log
+            - ./data:/home/data

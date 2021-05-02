@@ -1,0 +1,140 @@
+#
+# docker stack deploy -c geoos.yml geoos
+#
+version: '3.6'
+services:
+    db:
+        image: mongo:4.4.1-bionic
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: geoos-admin
+            MONGO_INITDB_ROOT_PASSWORD: geoos-password
+        volumes:
+            - ./../../dev-data/mongo-data:/data/db
+
+    portal:
+        image: node:14-alpine
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9234:9234/tcp # nodemon debugger
+            - 8090:8090/tcp
+        working_dir: /usr/src/app
+        environment:
+            MONGO_URL: "mongodb://geoos-admin:geoos-password@db:27017"
+            MONGO_DATABASE: geoos
+        volumes:
+            - ./../../portal:/usr/src/app
+            - ./../../dev-data/config:/home/config
+        command: "npm run-script debug"
+
+    noaa-gfs4:
+        image: node:14-alpine
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9230:9230/tcp # nodemon debugger
+        working_dir: /usr/src/app
+        environment:
+            LOG_LEVEL: debug
+            DOWNLOADER_ACTIVE: "false"
+            N_PARALLEL_DOWNLOADS: 5
+        volumes:
+            - ./../../noaa-gfs4:/usr/src/app
+            - ./../../dev-data/data:/home/data
+            - ./../../dev-data/config:/home/config
+            - ./../../dev-data/log:/home/log
+        command: "npm run-script debug"
+    
+    noaa-ww3:
+        image: node:14-alpine
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9232:9232/tcp # nodemon debugger
+        working_dir: /usr/src/app
+        environment:
+            LOG_LEVEL: debug
+            DOWNLOADER_ACTIVE: "true"
+            N_PARALLEL_DOWNLOADS: 5
+        volumes:
+            - ./../../noaa-ww3:/usr/src/app
+            - ./../../dev-data/data:/home/data
+            - ./../../dev-data/config:/home/config
+            - ./../../dev-data/log:/home/log
+        command: "npm run-script debug"
+
+    copernicus:
+        image: docker.homejota.net/geoos/node14-python3-arm
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9233:9233/tcp # nodemon debugger
+        working_dir: /usr/src/app
+        environment:
+            LOG_LEVEL: debug
+            DOWNLOADER_ACTIVE: "true"
+        volumes:
+            - ./../../copernicus:/usr/src/app
+            - ./../../dev-data/data:/home/data
+            - ./../../dev-data/config:/home/config
+            - ./../../dev-data/log:/home/log
+        command: "npm run-script debug"
+
+    geoserver:
+        image: docker.homejota.net/geoos/gdal-node14-arm
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9231:9231/tcp # nodemon debugger
+            - 8080:8080/tcp # web server
+        working_dir: /usr/src/app
+        environment:
+            LOG_LEVEL: debug
+        volumes:
+            - ./../../geoserver:/usr/src/app
+            - ./../../dev-data/data:/home/data
+            - ./../../dev-data/config:/home/config
+            - ./../../dev-data/log:/home/log
+            - ./../../dev-data/www:/home/www
+        command: "npm run-script debug"
+
+    zrepo:
+        image: node:14-alpine
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9235:9235/tcp # nodemon debugger
+            - 8096:8096/tcp
+        working_dir: /usr/src/app
+        environment:
+            MONGO_URL: "mongodb://geoos-admin:geoos-password@db:27017"
+            MONGO_DATABASE: zrepo
+            LOG_LEVEL: debug
+        volumes:
+            - ./../../z-repo:/usr/src/app
+            - ./../../dev-data/config:/home/config
+            - ./../../dev-data/log:/home/log
+        command: "npm run-script debug"
+
+    rie:
+        image: node:14-alpine
+        deploy:
+            restart_policy:
+                condition: on-failure
+        ports:
+            - 9236:9236/tcp # nodemon debugger
+        working_dir: /usr/src/app
+        environment:
+            LOG_LEVEL: debug
+        volumes:
+            - ./../../rie:/usr/src/app
+            - ./../../dev-data/config:/home/config
+            - ./../../dev-data/log:/home/log
+            - ./../../dev-data/data:/home/data
+        command: "npm run-script debug"
